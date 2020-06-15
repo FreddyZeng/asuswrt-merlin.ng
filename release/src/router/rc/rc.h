@@ -1429,6 +1429,7 @@ void stop_Tor_proxy(void);
 extern void write_static_leases(FILE *fp);
 #ifdef RTCONFIG_DHCP_OVERRIDE
 extern int restart_dnsmasq(int need_link_DownUp);
+extern int restart_dnsmasq_downup(int need_link_DownUp);
 #endif
 extern void start_dnsmasq(void);
 extern void stop_dnsmasq(void);

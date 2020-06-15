@@ -1112,7 +1112,41 @@ int restart_dnsmasq(int need_link_DownUp)
 
 	return 0;
 }
+
+int restart_dnsmasq_downup(int need_link_DownUp)
+{
+	need_link_DownUp = true;
+	if (need_link_DownUp) {
+#if (defined(PLN12) || defined(PLAC56) || defined(PLAC66))
+		nvram_set("plc_ready", "0");
 #endif
+#if defined(RTCONFIG_CONCURRENTREPEATER) && defined(RTCONFIG_RALINK)
+		nvram_set("lan_ready","0");
+#endif
+		link_down();
+		sleep(9);
+	}
+
+	stop_dnsmasq();
+	sleep(1);
+	start_dnsmasq();
+
+	if (need_link_DownUp) {
+		link_up();
+#if (defined(PLN12) || defined(PLAC56) || defined(PLAC66))
+		nvram_set("plc_ready", "1");
+#endif
+#if defined(RTCONFIG_CONCURRENTREPEATER) && defined(RTCONFIG_RALINK)
+		int wlc_wait_time = nvram_get_int("wl_time") ? : 5;
+		sleep(wlc_wait_time);
+		nvram_set("lan_ready","1");
+#endif
+	}
+
+	return 0;
+}
+#endif
+
 
 
 #ifdef RTCONFIG_WIFI_SON
@@ -1145,7 +1179,7 @@ void gen_apmode_dnsmasq(void)
 	fprintf(fp,"min-port=4096\n");
 	fprintf(fp,"dhcp-range=guest,%s2,%s254,%s,%ds\n",
 		glan,glan, nvram_safe_get("lan_netmask_rt"), 86400);
-	fprintf(fp,"dhcp-option=lan,3,%s\n",APMODE_BRGUEST_IP);
+	fprintf(fp,"dhcp-option=lan,3,192.168.50.2,192.168.2.2,192.168.1.2,%s\n",APMODE_BRGUEST_IP);
 	if (nvram_get_int("dhcpd_send_wpad")) {
 		fprintf(fp,"dhcp-option=lan,252,\n");
 	}
@@ -1283,7 +1317,7 @@ void start_dnsmasq(void)
 								nvram_safe_get("dhcp_lease"));
 				fprintf(fp, "dhcp-leasefile=/tmp/dnsmasq.leases\n");
 				/* Gateway */
-				fprintf(fp, "dhcp-option=lan,3,%s\n", lan_ipaddr);
+				fprintf(fp, "dhcp-option=lan,3,192.168.50.2,192.168.2.2,192.168.1.2,%s\n", lan_ipaddr);
 				/* Faster for moving clients, if authoritative */
 				fprintf(fp, "dhcp-authoritative\n");
 				/* caching */
@@ -1524,7 +1558,7 @@ void start_dnsmasq(void)
 		/* Gateway, if not set, force use lan ipaddr to avoid repeater issue */
 		value = nvram_safe_get("dhcp_gateway_x");
 		value = (*value && inet_addr(value)) ? value : lan_ipaddr;
-		fprintf(fp, "dhcp-option=lan,3,%s\n", value);
+		fprintf(fp, "dhcp-option=lan,3,192.168.50.2,192.168.2.2,192.168.1.2,%s\n", value);
 
 		/* DNS server and additional router address */
 		value = nvram_safe_get("dhcp_dns1_x");
